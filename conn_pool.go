@@ -14,14 +14,14 @@ const (
 
 type pConn struct {
 	net.Conn
-	pool *connPool
+	pool *ConnPool
 }
 
 func (c pConn) Close() error {
 	return c.pool.put(c)
 }
 
-type connPool struct {
+type ConnPool struct {
 	conns    *list.List
 	addr     string
 	maxConns int
@@ -30,11 +30,11 @@ type connPool struct {
 	finish   chan bool
 }
 
-func NewConnPool(addr string, maxConns int) (*connPool, error) {
+func NewConnPool(addr string, maxConns int) (*ConnPool, error) {
 	if maxConns < MAXCONNS_LEAST {
 		return nil, fmt.Errorf("too little maxConns < %d", MAXCONNS_LEAST)
 	}
-	connPool := &connPool{
+	connPool := &ConnPool{
 		conns:    list.New(),
 		addr:     addr,
 		maxConns: maxConns,
@@ -65,14 +65,14 @@ func NewConnPool(addr string, maxConns int) (*connPool, error) {
 	return connPool, nil
 }
 
-func (this *connPool) Destory() {
+func (this *ConnPool) Destory() {
 	if this == nil {
 		return
 	}
 	this.finish <- true
 }
 
-func (this *connPool) CheckConns() error {
+func (this *ConnPool) CheckConns() error {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	for e, next := this.conns.Front(), new(list.Element); e != nil; e = next {
@@ -100,7 +100,7 @@ func (this *connPool) CheckConns() error {
 	return nil
 }
 
-func (this *connPool) makeConn() error {
+func (this *ConnPool) makeConn() error {
 	conn, err := net.DialTimeout("tcp", this.addr, time.Second*10)
 	if err != nil {
 		return err
@@ -113,7 +113,7 @@ func (this *connPool) makeConn() error {
 	return nil
 }
 
-func (this *connPool) get() (net.Conn, error) {
+func (this *ConnPool) get() (net.Conn, error) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	for {
@@ -133,7 +133,7 @@ func (this *connPool) get() (net.Conn, error) {
 	return nil, nil
 }
 
-func (this *connPool) put(pConn pConn) error {
+func (this *ConnPool) put(pConn pConn) error {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	pConn.pool.conns.PushBack(pConn)
