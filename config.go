@@ -4,18 +4,18 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
-	"runtime"
 )
 
-type config struct {
-	trackerAddr []string
-	maxConns    int
+type Config struct {
+	TrackerAddr []string
+	MaxConns    int
 }
 
-func newConfig(configName string) (*config, error) {
-	config := &config{}
+func NewConfig(configName string) (*Config, error) {
+	config := &Config{}
 	f, err := os.Open(configName)
 	if err != nil {
 		return nil, err
@@ -31,9 +31,9 @@ func newConfig(configName string) (*config, error) {
 		str := strings.SplitN(line, "=", 2)
 		switch str[0] {
 		case "tracker_server":
-			config.trackerAddr = append(config.trackerAddr, str[1])
+			config.TrackerAddr = append(config.TrackerAddr, str[1])
 		case "maxConns":
-			config.maxConns, err = strconv.Atoi(str[1])
+			config.MaxConns, err = strconv.Atoi(str[1])
 			if err != nil {
 				return nil, err
 			}

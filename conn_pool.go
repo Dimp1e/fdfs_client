@@ -30,7 +30,7 @@ type connPool struct {
 	finish   chan bool
 }
 
-func newConnPool(addr string, maxConns int) (*connPool, error) {
+func NewConnPool(addr string, maxConns int) (*connPool, error) {
 	if maxConns < MAXCONNS_LEAST {
 		return nil, fmt.Errorf("too little maxConns < %d", MAXCONNS_LEAST)
 	}

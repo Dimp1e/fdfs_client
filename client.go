@@ -7,30 +7,30 @@ import (
 )
 
 type Client struct {
-	trackerPools    map[string]*connPool
-	storagePools    map[string]*connPool
-	storagePoolLock *sync.RWMutex
-	config          *config
+	TrackerPools    map[string]*connPool
+	StoragePools    map[string]*connPool
+	StoragePoolLock *sync.RWMutex
+	Config          *Config
 }
 
 func NewClientWithConfig(configName string) (*Client, error) {
-	config, err := newConfig(configName)
+	config, err := NewConfig(configName)
 	if err != nil {
 		return nil, err
 	}
 	client := &Client{
-		config:          config,
-		storagePoolLock: &sync.RWMutex{},
+		Config:          config,
+		StoragePoolLock: &sync.RWMutex{},
 	}
-	client.trackerPools = make(map[string]*connPool)
-	client.storagePools = make(map[string]*connPool)
+	client.TrackerPools = make(map[string]*connPool)
+	client.StoragePools = make(map[string]*connPool)
 
-	for _, addr := range config.trackerAddr {
-		trackerPool, err := newConnPool(addr, config.maxConns)
+	for _, addr := range config.TrackerAddr {
+		trackerPool, err := NewConnPool(addr, config.MaxConns)
 		if err != nil {
 			return nil, err
 		}
-		client.trackerPools[addr] = trackerPool
+		client.TrackerPools[addr] = trackerPool
 	}
 
 	return client, nil
@@ -40,10 +40,10 @@ func (this *Client) Destory() {
 	if this == nil {
 		return
 	}
-	for _, pool := range this.trackerPools {
+	for _, pool := range this.TrackerPools {
 		pool.Destory()
 	}
-	for _, pool := range this.storagePools {
+	for _, pool := range this.StoragePools {
 		pool.Destory()
 	}
 }
@@ -141,7 +141,7 @@ func (this *Client) DownloadToBuffer(fileId string, offset int64, downloadBytes 
 	return task.buffer, nil
 }
 
-func (this *Client) DownloadToAllocatedBuffer(fileId string, buffer []byte,offset int64, downloadBytes int64) (error) {
+func (this *Client) DownloadToAllocatedBuffer(fileId string, buffer []byte, offset int64, downloadBytes int64) error {
 	groupName, remoteFilename, err := splitFileId(fileId)
 	if err != nil {
 		return err
@@ -157,7 +157,7 @@ func (this *Client) DownloadToAllocatedBuffer(fileId string, buffer []byte,offse
 	task.remoteFilename = remoteFilename
 	task.offset = offset
 	task.downloadBytes = downloadBytes
-	task.buffer = buffer					//allocate buffer by user
+	task.buffer = buffer //allocate buffer by user
 
 	//res
 	if err := this.doStorage(task, storageInfo); err != nil {
@@ -190,7 +190,7 @@ func (this *Client) doTracker(task task) error {
 		return err
 	}
 	defer trackerConn.Close()
-	
+
 	if err := task.SendReq(trackerConn); err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func (this *Client) doStorage(task task, storageInfo *storageInfo) error {
 		return err
 	}
 	defer storageConn.Close()
-	
+
 	if err := task.SendReq(storageConn); err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func (this *Client) getTrackerConn() (net.Conn, error) {
 	var trackerConn net.Conn
 	var err error
 	var getOne bool
-	for _, trackerPool := range this.trackerPools {
+	for _, trackerPool := range this.TrackerPools {
 		trackerConn, err = trackerPool.get()
 		if err == nil {
 			getOne = true
@@ -254,18 +254,18 @@ func (this *Client) getTrackerConn() (net.Conn, error) {
 }
 
 func (this *Client) getStorageConn(storageInfo *storageInfo) (net.Conn, error) {
-	this.storagePoolLock.Lock()
-	storagePool, ok := this.storagePools[storageInfo.addr]
+	this.StoragePoolLock.Lock()
+	storagePool, ok := this.StoragePools[storageInfo.addr]
 	if ok {
-		this.storagePoolLock.Unlock()
+		this.StoragePoolLock.Unlock()
 		return storagePool.get()
 	}
-	storagePool, err := newConnPool(storageInfo.addr, this.config.maxConns)
+	storagePool, err := NewConnPool(storageInfo.addr, this.Config.MaxConns)
 	if err != nil {
-		this.storagePoolLock.Unlock()
+		this.StoragePoolLock.Unlock()
 		return nil, err
 	}
-	this.storagePools[storageInfo.addr] = storagePool
-	this.storagePoolLock.Unlock()
+	this.StoragePools[storageInfo.addr] = storagePool
+	this.StoragePoolLock.Unlock()
 	return storagePool.get()
 }
