@@ -7,8 +7,8 @@ import (
 )
 
 type Client struct {
-	TrackerPools    map[string]*connPool
-	StoragePools    map[string]*connPool
+	TrackerPools    map[string]*ConnPool
+	StoragePools    map[string]*ConnPool
 	StoragePoolLock *sync.RWMutex
 	Config          *Config
 }
@@ -22,8 +22,8 @@ func NewClientWithConfig(configName string) (*Client, error) {
 		Config:          config,
 		StoragePoolLock: &sync.RWMutex{},
 	}
-	client.TrackerPools = make(map[string]*connPool)
-	client.StoragePools = make(map[string]*connPool)
+	client.TrackerPools = make(map[string]*ConnPool)
+	client.StoragePools = make(map[string]*ConnPool)
 
 	for _, addr := range config.TrackerAddr {
 		trackerPool, err := NewConnPool(addr, config.MaxConns)
