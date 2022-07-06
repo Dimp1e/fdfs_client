@@ -72,7 +72,7 @@ func (this *Client) UploadByFilename(fileName string) (string, error) {
 }
 
 func (this *Client) UploadByBuffer(buffer []byte, fileExtName string) (string, error) {
-	fileInfo, err := newFileInfo("", buffer, fileExtName)
+	fileInfo, err := newFileInfo(fileExtName, buffer, "")
 	defer fileInfo.Close()
 	if err != nil {
 		return "", err
