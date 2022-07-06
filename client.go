@@ -3,6 +3,7 @@ package fdfs_client
 import (
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 )
 
@@ -72,7 +73,14 @@ func (this *Client) UploadByFilename(fileName string) (string, error) {
 }
 
 func (this *Client) UploadByBuffer(buffer []byte, fileExtName string) (string, error) {
-	fileInfo, err := newFileInfo(fileExtName, buffer, "")
+	index := strings.LastIndexByte(fileExtName, '.')
+	if index != -1 {
+		fileExtName = fileExtName[index+1:]
+		if len(fileExtName) > 6 {
+			fileExtName = fileExtName[:6]
+		}
+	}
+	fileInfo, err := newFileInfo("", buffer, fileExtName)
 	defer fileInfo.Close()
 	if err != nil {
 		return "", err
